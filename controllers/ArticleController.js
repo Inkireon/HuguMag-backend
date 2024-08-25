@@ -6,7 +6,7 @@ import {query} from "../db.js"
 async function get(req, res) {
     
     try {
-        const { section } = req.body;
+        const { section } = req.query;
         const data = await query('SELECT * FROM articles WHERE section = $1',[section]);
         res.json(data.rows);
     } catch (error) {
