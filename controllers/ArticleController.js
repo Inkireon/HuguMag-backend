@@ -46,7 +46,7 @@ async function put(req, res) {
             return res.status(400).json({ message: "Invalid ID format" });
         }
 
-        const articleImage = req.file ? req.file.path : photo;
+        const articleImage = req.file ? req.file.path : null;
 
         let queryText = 'UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5';
         let queryParams = [title, paragraph, articleImage, hide, section];
