@@ -32,11 +32,11 @@ async function post(req, res) {
 };
 
 async function put(req, res) {
-    console.log("req.body", req.body);
+    console.log("req.body", req.query);
     console.log("req.file", req.file);
     
     try {
-        const { ID, title, paragraph, photo, hide, section, size, placement } = req.body;
+        const { ID, title, paragraph, photo, hide, section, size, placement } = req.query;
         const photoe = req.file ? req.file.path : null;
         console.log(ID);
         let result;
