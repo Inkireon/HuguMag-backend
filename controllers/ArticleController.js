@@ -68,7 +68,7 @@ async function put(req, res) {
                 break;
         }
 
-        const data = await query('SELECT * FROM articles WHERE ID = $1', [ID]);
+        const data = await query('SELECT * FROM articles WHERE id = $1', [ID]);
         res.json(data.rows);
 
     } catch (error) {
