@@ -38,8 +38,7 @@ async function put(req, res) {
     console.log("Incoming file:", req.file);
 
     try {
-        const { ID, title, paragraph, photo,  hide, section, size, placement } = req.query;
-        
+        const { ID, title, paragraph, photo, hide, section, size, placement } = req.body;
         
         const articleID = parseInt(ID, 10);
         if (isNaN(articleID)) {
