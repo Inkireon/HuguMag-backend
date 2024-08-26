@@ -43,22 +43,22 @@ async function put(req, res) {
 
         switch (section) {
             case 'social':
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', 
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE id = $6', 
                 [title, paragraph, photo, hide, section, ID]);
                 break;
             
             case 'beauty':
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, placement = $6 WHERE ID = $7', 
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, placement = $6 WHERE id = $7', 
                 [title, paragraph, photo, hide, section, placement, ID]);
                 break;
 
             case 'fashion':
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, size = $6 WHERE ID = $7', 
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, size = $6 WHERE id = $7', 
                 [title, paragraph, photo, hide, section, size, ID]);
                 break;
 
             default:
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', 
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE id = $6', 
                 [title, paragraph, photo, hide, section, ID]);
                 break;
         }
