@@ -32,50 +32,50 @@ async function post(req, res) {
 };
 
 async function put(req, res) {
-    console.log("req.body", req.body)
-    console.log("req.file", req.file)
+    console.log("req.body", req.body);
+    console.log("req.file", req.file);
+    
     try {
         const { ID, title, paragraph, photo, hide, section, size, placement } = req.body;
         const articleImage = req.file ? req.file.path : null;
 
+        let result;
+
         switch (section) {
             case 'social':
-                await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', [title, paragraph, photo, hide, section, ID]);
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', 
+                [title, paragraph, photo, hide, section, ID]);
                 break;
-
+            
             case 'beauty':
-                await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, placement = $6 WHERE ID = $7', [title, paragraph, photo, hide, section, placement, ID]);
-                break;
-
-            case 'art':
-                await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', [title, paragraph, photo, hide, section, ID]);
-                break;
-
-            case 'events':
-                await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', [title, paragraph, photo, hide, section, ID]);
-                break;
-
-            case 'top-news':
-                await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', [title, paragraph, photo, hide, section, ID]);
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, placement = $6 WHERE ID = $7', 
+                [title, paragraph, photo, hide, section, placement, ID]);
                 break;
 
             case 'fashion':
-                await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, size = $6 WHERE ID = $7', [title, paragraph, photo, hide, section, size, ID]);
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, size = $6 WHERE ID = $7', 
+                [title, paragraph, photo, hide, section, size, ID]);
                 break;
 
             default:
-                await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', [title, paragraph, photo, hide, section, ID]);
+                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE ID = $6', 
+                [title, paragraph, photo, hide, section, ID]);
                 break;
         }
 
-        const data = await query('SELECT * FROM articles WHERE id = $1', [ID]);
-        res.json(data.rows);
+        console.log('Update result:', result);
+
+        const data = await query('SELECT * FROM articles WHERE ID = $1', [ID]);
+        console.log('Select result:', data);
+
+        res.json(data.rows.length > 0 ? data.rows : { message: "No matching records found" });
 
     } catch (error) {
         console.error('Error querying database:', error);
         res.status(500).send('Internal Server Error');
     }
 };
+
 
 async function del(req, res) {
     try {
