@@ -37,7 +37,7 @@ async function put(req, res) {
     
     try {
         const { ID, title, paragraph, photo, hide, section, size, placement } = req.body;
-        const articleImage = req.file ? req.file.path : null;
+        const photoe = req.file ? req.file.path : null;
 
         let result;
 
@@ -65,7 +65,7 @@ async function put(req, res) {
 
         console.log('Update result:', result);
 
-        const data = await query('SELECT * FROM articles WHERE ID = $1', [ID]);
+        const data = await query('SELECT * FROM articles WHERE id = $1', [ID]);
         console.log('Select result:', data);
 
         res.json(data.rows.length > 0 ? data.rows : { message: "No matching records found" });
