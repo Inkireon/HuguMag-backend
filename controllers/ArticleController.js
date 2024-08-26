@@ -38,7 +38,7 @@ async function put(req, res) {
     try {
         const { ID, title, paragraph, photo, hide, section, size, placement } = req.body;
         const photoe = req.file ? req.file.path : null;
-
+        console.log(ID);
         let result;
 
         switch (section) {
