@@ -17,7 +17,7 @@ const router = new express.Router();
 
 router.get("/",controller.get)
 router.delete("/",controller.del)
-router.post("/",upload.single('photo'),controller.post)
-router.put("/",upload.single('photo'),controller.put)
+router.post("/",upload.single('articleImage'),controller.post)
+router.put("/",upload.single('articleImage'),controller.put)
 
 export default router
