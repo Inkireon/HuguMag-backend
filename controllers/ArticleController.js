@@ -32,43 +32,47 @@ async function post(req, res) {
 };
 
 async function put(req, res) {
-    console.log("req.body", req.query);
-    console.log("req.file", req.file);
-    
+    console.log("Incoming request body:", req.query);
+    console.log("Incoming file:", req.file);
+
     try {
         const { ID, title, paragraph, photo, hide, section, size, placement } = req.query;
-        const photoe = req.file ? req.file.path : null;
-        console.log(ID);
-        let result;
-
-        switch (section) {
-            case 'social':
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE id = $6', 
-                [title, paragraph, photo, hide, section, ID]);
-                break;
-            
-            case 'beauty':
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, placement = $6 WHERE id = $7', 
-                [title, paragraph, photo, hide, section, placement, ID]);
-                break;
-
-            case 'fashion':
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5, size = $6 WHERE id = $7', 
-                [title, paragraph, photo, hide, section, size, ID]);
-                break;
-
-            default:
-                result = await query('UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5 WHERE id = $6', 
-                [title, paragraph, photo, hide, section, ID]);
-                break;
+        
+        
+        const articleID = parseInt(ID, 10);
+        if (isNaN(articleID)) {
+            return res.status(400).json({ message: "Invalid ID format" });
         }
 
+        const articleImage = req.file ? req.file.path : photo;
+
+        let queryText = 'UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5';
+        let queryParams = [title, paragraph, articleImage, hide, section];
+
+        if (section === 'beauty') {
+            queryText += ', placement = $6 WHERE id = $7';
+            queryParams.push(placement, articleID);
+        } else if (section === 'fashion') {
+            queryText += ', size = $6 WHERE id = $7';
+            queryParams.push(size, articleID);
+        } else {
+            queryText += ' WHERE id = $6';
+            queryParams.push(articleID);
+        }
+
+        console.log("Executing query:", queryText, queryParams);
+
+        const result = await query(queryText, queryParams);
         console.log('Update result:', result);
 
-        const data = await query('SELECT * FROM articles WHERE id = $1', [ID]);
-        console.log('Select result:', data);
+        const data = await query('SELECT * FROM articles WHERE id = $1', [articleID]);
+        console.log('Select result:', data.rows);
 
-        res.json(data.rows.length > 0 ? data.rows : { message: "No matching records found" });
+        if (data.rows.length > 0) {
+            res.json(data.rows);
+        } else {
+            res.status(404).json({ message: "No matching records found" });
+        }
 
     } catch (error) {
         console.error('Error querying database:', error);
@@ -101,3 +105,6 @@ async function del(req, res) {
 };
 
 export default { get, post, put, del };
+
+
+
