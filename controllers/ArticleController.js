@@ -4,32 +4,116 @@ import { query } from "../db.js"
 
 
 async function get(req, res) {
-
     try {
-        const { section } = req.query;
-        const data = await query('SELECT * FROM articles WHERE section = $1', [section]);
+        const { category_id } = req.query;
+        let queryText;
+        let queryParams = [category_id];
+
+        switch (category_id) {
+            case '1':  
+                queryText = `
+                    SELECT 
+                        a.id,
+                        a.title,
+                        a.content,
+                        a.image_path,
+                        a.visibility,
+                        c.name AS category_name,
+                        f.size AS fashion_size
+                    FROM articles a
+                    JOIN categories c ON a.category_id = c.id
+                    LEFT JOIN fashion_articles f ON a.id = f.article_id
+                    WHERE a.category_id = $1 AND a.visibility = TRUE
+                `;
+                break;
+
+            case '2':  
+                queryText = `
+                    SELECT 
+                        a.id,
+                        a.title,
+                        a.content,
+                        a.image_path,
+                        a.visibility,
+                        c.name AS category_name,
+                        b.position AS beauty_position
+                    FROM articles a
+                    JOIN categories c ON a.category_id = c.id
+                    LEFT JOIN beauty_articles b ON a.id = b.article_id
+                    WHERE a.category_id = $1 AND a.visibility = TRUE
+                `;
+                break;
+
+            default:  
+                queryText = `
+                    SELECT 
+                        a.id,
+                        a.title,
+                        a.content,
+                        a.image_path,
+                        a.visibility,
+                        c.name AS category_name
+                    FROM articles a
+                    JOIN categories c ON a.category_id = c.id
+                    WHERE a.category_id = $1 AND a.visibility = TRUE
+                `;
+                break;
+        }
+
+        const data = await query(queryText, queryParams);
         res.json(data.rows);
     } catch (error) {
         console.error('Error querying database:', error);
         res.status(500).send('Internal Server Error');
     }
-};
+}
+
 
 async function post(req, res) {
-    console.log("req.body", req.body)
-    console.log("req.file", req.file)
+    const { title, content, category_id, visibility, fashion_size, beauty_position } = req.body;
+    const imagePath = req.file ? req.file.path : null;
 
-    try {
-        const { name, shortInfo } = req.body;
-        const articleImage = req.file ? req.file.path : null;
-        await query('INSERT INTO articles (name, shortinfo, articleimage) VALUES ($1, $2, $3)', [name, shortInfo, articleImage]);
-        res.status(200).send({ message: "succsess !!!" });
-    } catch (error) {
-        console.error('Error querying database:', error);
-        res.status(500).send('Internal Server Error');
+    if (!title || !content || !category_id) {
+        return res.status(400).json({ message: "Missing required fields" });
     }
 
-};
+    try {
+        
+        const articleQueryText = `
+            INSERT INTO articles (title, content, image_path, visibility, category_id)
+            VALUES ($1, $2, $3, $4, $5) RETURNING id
+        `;
+        const articleParams = [title, content, imagePath, visibility === 'true', category_id];
+        
+        const result = await query(articleQueryText, articleParams);
+        const articleID = result.rows[0].id;
+
+        
+        if (category_id === '1' && fashion_size) {  
+            const fashionQueryText = `
+                INSERT INTO fashion_articles (article_id, size)
+                VALUES ($1, $2)
+            `;
+            await query(fashionQueryText, [articleID, fashion_size]);
+        }
+
+        if (category_id === '2' && beauty_position) {  
+            const beautyQueryText = `
+                INSERT INTO beauty_articles (article_id, position)
+                VALUES ($1, $2)
+            `;
+            await query(beautyQueryText, [articleID, beauty_position]);
+        }
+
+        res.status(201).json({ message: "Article added successfully", articleID });
+    } catch (error) {
+        console.error('Error querying database:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+}
+
+
+
 
 
 
@@ -38,34 +122,51 @@ async function put(req, res) {
     console.log("Incoming file:", req.file);
 
     try {
-        const { ID, title, paragraph, photo, hide, section, size, placement } = req.body;
-        
+        const { ID, title, content, image_path, visibility, category_id, size, placement } = req.body;
+
         const articleID = parseInt(ID, 10);
         if (isNaN(articleID)) {
             return res.status(400).json({ message: "Invalid ID format" });
         }
 
-        const articleImage = req.file ? req.file.path : photo;
+        const articleImage = req.file ? req.file.path : image_path;
 
-        let queryText = 'UPDATE articles SET title = $1, paragraph = $2, photo = $3, hide = $4, section = $5';
-        let queryParams = [title, paragraph, articleImage, hide, section];
+        let queryText = `
+            UPDATE articles
+            SET title = $1, content = $2, image_path = $3, visibility = $4, category_id = $5
+        `;
+        let queryParams = [title, content, articleImage, visibility, category_id];
 
-        if (section === 'beauty') {
-            queryText += ', placement = $6 WHERE id = $7';
-            queryParams.push(placement, articleID);
-        } else if (section === 'fashion') {
-            queryText += ', size = $6 WHERE id = $7';
-            queryParams.push(size, articleID);
+        if (category_id === '3') { 
+            queryText += ' WHERE id = $6';
+            queryParams.push(articleID);
+            
+            await query(`
+                INSERT INTO fashion_articles (article_id, size)
+                VALUES ($1, $2)
+                ON CONFLICT (article_id)
+                DO UPDATE SET size = EXCLUDED.size
+            `, [articleID, size]);
+        } else if (category_id === '5') { 
+            queryText += ' WHERE id = $6';
+            queryParams.push(articleID);
+            
+            await query(`
+                INSERT INTO beauty_articles (article_id, position)
+                VALUES ($1, $2)
+                ON CONFLICT (article_id)
+                DO UPDATE SET position = EXCLUDED.position
+            `, [articleID, placement]);
         } else {
             queryText += ' WHERE id = $6';
             queryParams.push(articleID);
         }
 
         console.log("Executing query:", queryText, queryParams);
+        const updateResult = await query(queryText, queryParams);
+        console.log('Update result:', updateResult);
 
-        const result = await query(queryText, queryParams);
-        console.log('Update result:', result);
-
+        
         const data = await query('SELECT * FROM articles WHERE id = $1', [articleID]);
         console.log('Select result:', data.rows);
 
@@ -79,7 +180,13 @@ async function put(req, res) {
         console.error('Error querying database:', error);
         res.status(500).send('Internal Server Error');
     }
-};
+}
+
+
+
+
+
+
 
 
 async function del(req, res) {
@@ -88,7 +195,7 @@ async function del(req, res) {
         const { name } = req.body;
 
         if (!name) {
-            return res.status(400).send({ message: 'Name is required' });
+            return res.status(400).send({ message: 'Title is required' });
         }
 
         const result = await query('DELETE FROM articles WHERE name = $1', [name]);
