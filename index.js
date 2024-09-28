@@ -6,14 +6,14 @@ const PORT = process.env.PORT || 8080
 const app = express();
 
 
-app.use(cors());
-app.use(express.json());
+app.use(cors());// корсы 
+app.use(express.json());//работа с json
 
-app.use('/images', express.static('images'));
-app.use("/articles",ArticlesRoute);
+app.use('/images', express.static('images'));//эта строка позволяет доставать картинки по URL
+app.use("/articles",ArticlesRoute);//использование роута артиклей с файла routes
 
 
 
 app.listen(PORT,() =>{
-    console.log("server running")
+    console.log("server running")//лог запуска сервера
 });

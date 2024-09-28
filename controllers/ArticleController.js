@@ -3,15 +3,15 @@ import { query } from "../db.js"
 
 
 
-async function get(req, res) {
+async function get(req, res) { // метод гет 
     try {
         const { category_id } = req.query;
         let queryText;
-        let queryParams = [category_id];
+        let queryParams = [category_id];//в запросе необходимо заложить какую именно категорию статей необходимо вытащить
 
         switch (category_id) {
-            case '1':  
-                queryText = `
+            case '3':  //3 это категория fashion которая включает в себя параметр отвечающий размер,поэтому тут в куери есть спецаильные теги отвечающие за это
+                queryText = ` 
                     SELECT 
                         a.id,
                         a.title,
@@ -19,7 +19,7 @@ async function get(req, res) {
                         a.image_path,
                         a.visibility,
                         c.name AS category_name,
-                        f.size AS fashion_size
+                        f.size AS fashion_size 
                     FROM articles a
                     JOIN categories c ON a.category_id = c.id
                     LEFT JOIN fashion_articles f ON a.id = f.article_id
@@ -27,7 +27,7 @@ async function get(req, res) {
                 `;
                 break;
 
-            case '2':  
+            case '5':  // 5 категория beauty у нее есть расищиряюший параметр отвечающий за позицию,и в целом она работает как предыдущая
                 queryText = `
                     SELECT 
                         a.id,
@@ -44,7 +44,7 @@ async function get(req, res) {
                 `;
                 break;
 
-            default:  
+            default:  //куери для всех остальных статей не имеющих расширения
                 queryText = `
                     SELECT 
                         a.id,
@@ -60,21 +60,21 @@ async function get(req, res) {
                 break;
         }
 
-        const data = await query(queryText, queryParams);
-        res.json(data.rows);
-    } catch (error) {
-        console.error('Error querying database:', error);
-        res.status(500).send('Internal Server Error');
+        const data = await query(queryText, queryParams);//ожидание пока запрос в базу данных выполнится и вернет значения
+        res.json(data.rows);//возвращения результата
+    } catch (error) {//ошибка
+        console.error('Error querying database:', error);//логирование в случае ошибки с бд 
+        res.status(500).send('Internal Server Error');//ответ пользователю
     }
 }
 
 
-async function post(req, res) {
-    const { title, content, category_id, visibility, fashion_size, beauty_position } = req.body;
-    const imagePath = req.file ? req.file.path : null;
+async function post(req, res) {//метод пост
+    const { title, content, category_id, visibility, fashion_size, beauty_position } = req.body;//параметры которые необходимо заложить в запрос
+    const imagePath = req.file ? req.file.path : null;//логика модуля multer которая сохраняет картинку по необходимому пути и присвавает каринке новое имя
 
     if (!title || !content || !category_id) {
-        return res.status(400).json({ message: "Missing required fields" });
+        return res.status(400).json({ message: "Missing required fields" });//выдача ошибки 400 в случае отсутвия этих трех параметров 
     }
 
     try {
@@ -82,62 +82,69 @@ async function post(req, res) {
         const articleQueryText = `
             INSERT INTO articles (title, content, image_path, visibility, category_id)
             VALUES ($1, $2, $3, $4, $5) RETURNING id
-        `;
+        `;// сам куери
         const articleParams = [title, content, imagePath, visibility === 'true', category_id];
         
-        const result = await query(articleQueryText, articleParams);
-        const articleID = result.rows[0].id;
+        const result = await query(articleQueryText, articleParams);//ожидание пока запрос в базу данных выполнится и вернет значения
+        const articleID = result.rows[0].id;//сохранение результата
 
         
-        if (category_id === '1' && fashion_size) {  
+        if (category_id === '3' && fashion_size) {  //запись расширения в зависимости от категории,в данном случае категория fashion
             const fashionQueryText = `
                 INSERT INTO fashion_articles (article_id, size)
                 VALUES ($1, $2)
             `;
-            await query(fashionQueryText, [articleID, fashion_size]);
+            await query(fashionQueryText, [articleID, fashion_size]);//ожидание пока запрос расширения в базу данных выполнится и вернет значения
         }
 
-        if (category_id === '2' && beauty_position) {  
+        if (category_id === '5' && beauty_position) {  //запись расширения в зависимости от категории,в данном случае категория beauty
             const beautyQueryText = `
                 INSERT INTO beauty_articles (article_id, position)
                 VALUES ($1, $2)
             `;
-            await query(beautyQueryText, [articleID, beauty_position]);
+            await query(beautyQueryText, [articleID, beauty_position]);//ожидание пока запрос расширения в базу данных выполнится и вернет значения
         }
 
-        res.status(201).json({ message: "Article added successfully", articleID });
-    } catch (error) {
-        console.error('Error querying database:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(201).json({ message: "Article added successfully", articleID });//результат в случае успеха 
+    } catch (error) {//результат ошибки
+        console.error('Error querying database:', error);//логирование в случае ошибки с бд
+        res.status(500).json({ message: 'Internal Server Error' });//ответ пользователю
     }
 }
 
+//ДЛЯ ПОДРОБНОСТЕЙ ПРО РАСШИРЕНИЯ ЧИТАЙТЕ ДОКУМЕНТАЦИЮ
 
 
 
 
-
-async function put(req, res) {
-    console.log("Incoming request body:", req.body);
-    console.log("Incoming file:", req.file);
+async function put(req, res) {//метод пут(апдейт)
+    console.log("Incoming request body:", req.body);//письменные данные с формата запроса form-data
+    console.log("Incoming file:", req.file);//файловые данные с этого же запроса в случае их наличия
 
     try {
-        const { ID, title, content, image_path, visibility, category_id, size, placement } = req.body;
+            const currentArticleData = await query('SELECT * FROM articles WHERE id = $1', [articleID]);//выбор артикля по айдишнику и сохранение его данных 
 
-        const articleID = parseInt(ID, 10);
-        if (isNaN(articleID)) {
-            return res.status(400).json({ message: "Invalid ID format" });
+        if (currentArticleData.rows.length === 0) {
+            return res.status(404).json({ message: "No matching records found" });//ошибка при отсутвии статьи по айди
         }
 
-        const articleImage = req.file ? req.file.path : image_path;
+        const existingArticle = currentArticleData.rows[0];//хапись уже имеющихся данных
+
+        const updatedTitle = title || existingArticle.title;
+        const updatedContent = content || existingArticle.content;
+        const updatedImage = req.file ? req.file.path : existingArticle.image_path;
+        const updatedVisibility = visibility || existingArticle.visibility;
+        const updatedCategoryId = category_id || existingArticle.category_id;//часть логики перезаписи при наличии новых данных
 
         let queryText = `
             UPDATE articles
             SET title = $1, content = $2, image_path = $3, visibility = $4, category_id = $5
-        `;
-        let queryParams = [title, content, articleImage, visibility, category_id];
+            WHERE id = $6
+            `;//куери для обычной статьи
 
-        if (category_id === '3') { 
+        let queryParams = [updatedTitle, updatedContent, updatedImage, updatedVisibility, updatedCategoryId, articleID];//ее параметры которые мы сохранили 
+
+        if (category_id === '3') { //реализация расширения для категории fashion
             queryText += ' WHERE id = $6';
             queryParams.push(articleID);
             
@@ -147,7 +154,7 @@ async function put(req, res) {
                 ON CONFLICT (article_id)
                 DO UPDATE SET size = EXCLUDED.size
             `, [articleID, size]);
-        } else if (category_id === '5') { 
+        } else if (category_id === '5') { //реализация для beauty
             queryText += ' WHERE id = $6';
             queryParams.push(articleID);
             
@@ -162,23 +169,23 @@ async function put(req, res) {
             queryParams.push(articleID);
         }
 
-        console.log("Executing query:", queryText, queryParams);
-        const updateResult = await query(queryText, queryParams);
-        console.log('Update result:', updateResult);
+        console.log("Executing query:", queryText, queryParams);//логирование куери
+        const updateResult = await query(queryText, queryParams);//выполнение и ожидание куери 
+        console.log('Update result:', updateResult);//логирование результата
 
         
-        const data = await query('SELECT * FROM articles WHERE id = $1', [articleID]);
-        console.log('Select result:', data.rows);
+        const data = await query('SELECT * FROM articles WHERE id = $1', [articleID]);//перепроверка бд
+        console.log('Select result:', data.rows);//логирование данных с самоц бд
 
         if (data.rows.length > 0) {
             res.json(data.rows);
         } else {
             res.status(404).json({ message: "No matching records found" });
-        }
+        }//ошибка в случае отсутсвия в бд
 
     } catch (error) {
-        console.error('Error querying database:', error);
-        res.status(500).send('Internal Server Error');
+        console.error('Error querying database:', error);//лог ошибки
+        res.status(500).send('Internal Server Error');//выдача результата пользоваетлю
     }
 }
 
@@ -189,7 +196,7 @@ async function put(req, res) {
 
 
 
-async function del(req, res) {
+async function del(req, res) {//не смотри сюда дел не реализован
     try {
 
         const { name } = req.body;
@@ -212,7 +219,7 @@ async function del(req, res) {
     }
 };
 
-export default { get, post, put, del };
+export default { get, post, put, del };//экспорт методов (в файл "routes") 
 
 
 
