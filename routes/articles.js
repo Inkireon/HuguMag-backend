@@ -18,6 +18,8 @@ const upload = multer({storage})
 const router = new express.Router();
 
 //все наши роутеры
+router.get("/rand",controller.getrand)
+router.get("/all",controller.getall)
 router.get("/",controller.get)
 router.delete("/",controller.del)
 router.post("/",upload.single('articleImage'),controller.post)//роутеры пост и пут используют прописанную нами логику multer,для записи файлов

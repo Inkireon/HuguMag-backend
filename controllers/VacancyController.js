@@ -1,7 +1,7 @@
 import { query } from "../db.js";
 
 // GET method: Retrieve vacancies
-async function get(req, res) {
+async function getall(req, res) {
     try {
         const data = await query(`
             SELECT 
@@ -22,6 +22,36 @@ async function get(req, res) {
         res.status(500).send('Internal Server Error');
     }
 }
+
+async function get(req, res) {
+    try {
+        const { page = 1 } = req.query; // Extract the page number from the query, default to 1
+        const limit = 10; // Number of items per page
+        const offset = (page - 1) * limit; // Calculate the offset for pagination
+
+        const data = await query(`
+            SELECT 
+                vacancy_id, 
+                title, 
+                description, 
+                requirements, 
+                salary_min, 
+                salary_max, 
+                employment_type, 
+                posted_date, 
+                closing_date 
+            FROM vacancies
+            ORDER BY posted_date DESC
+            LIMIT $1 OFFSET $2
+        `, [limit, offset]); // Pass limit and offset as query parameters
+
+        res.json(data.rows); // Return the paginated results
+    } catch (error) {
+        console.error('Error querying database:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+
 
 // POST method: Create a new vacancy
 async function post(req, res) {
@@ -145,4 +175,4 @@ async function delApp(req, res) {
     }
 }
 
-export default { get, post, put, del, postApp,delApp };
+export default { getall, get, post, put, del, postApp,delApp };

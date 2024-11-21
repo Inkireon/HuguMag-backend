@@ -5,6 +5,7 @@ import controller from "../controllers/VacancyController.js";//файл конт
 const router = new express.Router();
 
 //все наши роутеры
+router.get("/all",controller.getall)
 router.get("/",controller.get)
 router.delete("/",controller.del)
 router.post("/",controller.post)

@@ -1,9 +1,81 @@
 import { query } from "../db.js";
 import path from 'path';
 
+async function get(req, res) { 
+    try {
+        const { category_id, page = 1 } = req.query; // Extract category_id and page from query parameters
+        const limit = 20; // Number of items per page
+        const offset = (page - 1) * limit; // Calculate the offset for pagination
+
+        let queryText;
+        let queryParams = [category_id, limit, offset]; // Add limit and offset as parameters
+
+        switch (category_id) {
+            case '3': // Fashion category with size parameter
+                queryText = ` 
+                    SELECT 
+                        a.id,
+                        a.title,
+                        a.content,
+                        a.image_path,
+                        a.visibility,
+                        c.name AS category_name,
+                        f.size AS fashion_size 
+                    FROM articles a
+                    JOIN categories c ON a.category_id = c.id
+                    LEFT JOIN fashion_articles f ON a.id = f.article_id
+                    WHERE a.category_id = $1 AND a.visibility = TRUE
+                    LIMIT $2 OFFSET $3
+                `;
+                break;
+
+            case '5': // Beauty category with position parameter
+                queryText = `
+                    SELECT 
+                        a.id,
+                        a.title,
+                        a.content,
+                        a.image_path,
+                        a.visibility,
+                        c.name AS category_name,
+                        b.position AS beauty_position
+                    FROM articles a
+                    JOIN categories c ON a.category_id = c.id
+                    LEFT JOIN beauty_articles b ON a.id = b.article_id
+                    WHERE a.category_id = $1 AND a.visibility = TRUE
+                    LIMIT $2 OFFSET $3
+                `;
+                break;
+
+            default: // Query for other categories without extensions
+                queryText = `
+                    SELECT 
+                        a.id,
+                        a.title,
+                        a.content,
+                        a.image_path,
+                        a.visibility,
+                        c.name AS category_name
+                    FROM articles a
+                    JOIN categories c ON a.category_id = c.id
+                    WHERE a.category_id = $1 AND a.visibility = TRUE
+                    LIMIT $2 OFFSET $3
+                `;
+                break;
+        }
+
+        const data = await query(queryText, queryParams); // Execute the query
+        console.log(data.rows);
+        res.json(data.rows); // Send the results as JSON
+        
+    } catch (error) { // Handle errors
+        console.error('Error querying database:', error);
+        res.status(500).send('Internal Server Error');
+    }
+}
 
 
-async function get(req, res) { // метод гет 
+async function getall(req, res) { // метод гет 
     try {
         const { category_id } = req.query;
         let queryText;
@@ -221,7 +293,7 @@ async function del(req, res) {//не смотри сюда дел не реал�
     }
 };
 
-export default { get, post, put, del };//экспорт методов (в файл "routes") 
+export default { get, post, put, del, getall };//экспорт методов (в файл "routes") 
 
 
 
