@@ -1,5 +1,5 @@
-import { query } from "../db.js"
-
+import { query } from "../db.js";
+import path from 'path';
 
 
 
@@ -61,7 +61,9 @@ async function get(req, res) { // метод гет
         }
 
         const data = await query(queryText, queryParams);//ожидание пока запрос в базу данных выполнится и вернет значения
+        console.log(data.rows);
         res.json(data.rows);//возвращения результата
+        
     } catch (error) {//ошибка
         console.error('Error querying database:', error);//логирование в случае ошибки с бд 
         res.status(500).send('Internal Server Error');//ответ пользователю
@@ -71,7 +73,7 @@ async function get(req, res) { // метод гет
 
 async function post(req, res) {//метод пост
     const { title, content, category_id, visibility, fashion_size, beauty_position } = req.body;//параметры которые необходимо заложить в запрос
-    const imagePath = req.file ? req.file.path : null;//логика модуля multer которая сохраняет картинку по необходимому пути и присвавает каринке новое имя
+    const imagePath = req.file ?path.posix.join('images', req.file.filename) : null;//логика модуля multer которая сохраняет картинку по необходимому пути и присвавает каринке новое имя
 
     if (!title || !content || !category_id) {
         return res.status(400).json({ message: "Missing required fields" });//выдача ошибки 400 в случае отсутвия этих трех параметров 
@@ -132,7 +134,7 @@ async function put(req, res) {//метод пут(апдейт)
 
         const updatedTitle = title || existingArticle.title;
         const updatedContent = content || existingArticle.content;
-        const updatedImage = req.file ? req.file.path : existingArticle.image_path;
+        const updatedImage = req.file ?path.posix.join('images', req.file.filename) : existingArticle.image_path;
         const updatedVisibility = visibility || existingArticle.visibility;
         const updatedCategoryId = category_id || existingArticle.category_id;//часть логики перезаписи при наличии новых данных
 
